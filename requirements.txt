@@ -3,7 +3,7 @@
 # then:  pip install -r requirements.txt
 ultralytics
 scikit-learn
-onnx
+onnx<=1.19.1   # Ultralytics export requires this range
 onnxslim
 onnxruntime
 streamlit

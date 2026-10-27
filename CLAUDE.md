@@ -37,14 +37,25 @@ pip install -r requirements.txt
 - On this laptop, torch 2.9.1+cu126 / torchvision 0.24.1+cu126 **are installed and see the RTX 3050**. They were installed from wheels downloaded with resumable curl to `C:\circu360\wheels`, because pip downloads kept failing. That folder only holds installers and can be deleted.
 - Because the connection is bad, training on Kaggle (`circu360_kaggle_notebook.py`) is the main alternative: the dataset stays on Kaggle and only a small `circu360_outputs.zip` comes back.
 
-## Current state
-- `circu360_train_local.py` has been smoke-tested on fake images (dataset build, decide(), sweep). It has **not been trained yet**. In one run it:
+## Results of the first training run (2026-10-28, RTX 3050)
+- Dataset: PET 1,508 / HDPE 1,028 / OTHER 2,284 (`Images_of_Waste\rawimgs\...`; the `YOLO_imgs` copy is skipped). Split: 3,374 train / 723 val / 723 test.
+- Early stop after 15 epochs (best at epoch 7), 5 min of training. Test accuracy 97.9% (argmax); recall HDPE 99.4%, PET 98.7%, OTHER 96.8%.
+- **PET leak: 0 of 226 at every reject_t from 0.05 to 0.95.** By the rule of three, the 95% upper bound is ≈1.33%. At reject_t=0.30: PET recall 99.6% (the one remaining PET item went to UNCERTAIN, not the reactor), polyolefin false-reject 1.95%, uncertain 6.0%.
+- One OTHER item (a can or glass bottle) was ACCEPTed: a non-plastic leak into the reactor feed.
+- Latency on this GPU: mean 6.5 ms, p95 11.3 ms (model only), against the 35 ms spec.
+- Caveat for the essay: the test images come from the same photo set as the training images (clean, single objects), so real coastal waste will score lower.
+- Outputs: `runs\circu360\` (best.pt, best.onnx, confusion_matrix_test.png, test_predictions.csv, threshold_sweep.csv); logs: `train_log.txt`, `eval_log.txt`.
+
+## Pipeline
+- In one run, `circu360_train_local.py`:
   1. Builds a train/val/test (70/15/15, stratified, seed 42) dataset from `data\drinking-waste-raw` into `data\split`.
   2. Trains an Ultralytics **YOLO11n-cls** classifier at 224 px (batch 32, workers 2, `time=1.5` h cap, patience 8), with outputs in `runs\circu360\`.
   3. Evaluates on the test set: classification report, confusion matrix, per-item CSV, and a reject-threshold sweep (PET leak count and rate, PET recall, polyolefin false-reject rate, uncertain fraction). When a threshold shows 0 leaks, it prints the rule-of-three upper bound (≈3/n).
   4. Prints belt timing, both for the 35 ms spec and for the measured latency, and exports the model to ONNX.
 - `--eval-only` skips steps 1–2 and re-runs steps 3–4 on the existing `best.pt`.
 - If CUDA runs out of memory, lower batch to 16.
+- Pass a **folder** to `model.predict()`, not a list of paths. A list is loaded into RAM all at once and crashed with MemoryError on 8 GB.
+- During ONNX export, Ultralytics auto-installed `onnx 1.19.1` and `onnxruntime-gpu`. onnxruntime now offers the CUDA and TensorRT providers.
 
 ## Dataset
 - **Drinking Waste Classification** (Kaggle, arkadiyhacks): https://www.kaggle.com/datasets/arkadiyhacks/drinking-waste-classification
@@ -81,9 +92,10 @@ def decide(P, reject_t=0.30, accept_t=0.90, other_t=0.90):
 - Energy: pyrolysis gas heating value and reactor demand are **not verified**. Make them **editable inputs** in the dashboard, not hard-coded claims. HDPE oil is 43.4–46.5 MJ/kg (Shah et al. 2023).
 
 ## Still to build (next steps)
-1. Install CUDA torch, download the dataset into `data\drinking-waste-raw`, and run `python circu360_train_local.py`. Fix `FOLDER_MAP` or the batch size if needed.
-2. Use `runs\circu360\threshold_sweep.csv` to choose `reject_t`.
-3. **Belt simulation** (`belt_sim.py`, OpenCV):
+1. ~~Train~~ done. Retrain once the team's own PP/LDPE/PVC photos are added.
+2. Choose `reject_t`: every value gives 0 leaks, and between 0.15 and 0.30 the results differ by only one item, so they can't be told apart with this test set. Keep the essay's 0.30 unless the team decides otherwise.
+3. ~~Belt simulation~~ and 4. ~~Dashboard~~: **built and tested** (see "Demo" below). Original spec, kept for reference:
+   **Belt simulation** (`belt_sim.py`, OpenCV):
    - A canvas scrolls 13 px/frame (1 px = 1 mm) at 60 fps, with test images from `data\split\test` placed on it.
    - Each item is classified with `runs\circu360\weights\best.pt` or `best.onnx` (onnxruntime) as it crosses a trigger line.
    - A virtual ejector fires 400 px downstream on REJECT.
@@ -95,6 +107,24 @@ def decide(P, reject_t=0.30, accept_t=0.90, other_t=0.90):
    - Sankey diagram of the 2,000 → 1,700 → liquid/gas/char flow, with a ±9 wt% band on oil (Belden et al. 2023 model error).
    - Editable energy-balance inputs.
    - Run it locally. The free host is Streamlit Community Cloud; Hugging Face Gradio/Docker Spaces now need a paid plan.
+
+## Demo
+- Terminal 1: `streamlit run dashboard.py` (opens http://localhost:8501).
+- Terminal 2: `python belt_sim.py`. Options: `--speed 0.25` (default, 4× slow motion; 1 = real time), `--items 80`, `--reject-t 0.30`, `--onnx`, `--no-window` (record only), `--seed 1`.
+- `--speed` changes playback only, meaning the window and the `demo.mp4` fps. The simulated belt stays at 0.8 m/s, so the timings and `events.csv` are unchanged.
+- `belt_sim.py`:
+  - Positions are floats moving 13.3 px/frame, so the belt runs at exactly 0.8 m/s.
+  - Simulated time is frame/60, so `demo.mp4` always plays at true belt speed, even if the live window is slower.
+  - Items are classified at the camera line, and the ejector fires at capture + 485 ms (`belt_timing()`).
+  - The decision colours are the same as on the dashboard.
+- Tested: 80 items, decisions **identical (80/80)** to `test_predictions.csv`. End-to-end latency (pre-processing + model + post-processing) is 13.9 ms mean, 23.9 ms p95.
+- **Feed the camera the original image.** Pre-shrinking it (256 px, INTER_AREA) shifted borderline probabilities by up to 0.2 and flipped 3 of 20 decisions. That's a robustness point for the essay: items near the thresholds are sensitive to image scale.
+- `dashboard.py` has four sections:
+  1. Live counters, a class donut, decisions by class and a latency histogram, refreshed from `events.csv` every 2 s.
+  2. A reject_t slider that re-runs `decide()` on `test_predictions.csv`, the sweep chart and the confusion matrix.
+  3. A Sankey of the case mass flow with the oil ±9 band (interpreted as ±9 percentage points of yield).
+  4. Energy-balance inputs. The gas heating value and reactor demand start empty, and nothing is computed until a sourced value is entered.
+- Colours: classes use fixed categorical colours (HDPE blue, PET orange, OTHER aqua). Decisions use status colours, always with a text label.
 
 ## Style
 - Keep code simple and readable for students, with short comments and no over-engineering.

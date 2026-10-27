@@ -133,8 +133,8 @@ def evaluate(best):
 
     rows = []
     for cls_dir in sorted((DATA / "test").iterdir()):
-        imgs = [str(p) for p in sorted(cls_dir.iterdir())]
-        for r in model.predict(imgs, imgsz=224, stream=True, verbose=False):
+        # pass the folder, not a list of paths: a list is loaded into RAM all at once (MemoryError)
+        for r in model.predict(str(cls_dir), imgsz=224, stream=True, verbose=False):
             probs = r.probs.data.cpu().numpy()       # full probability vector for decide()
             rows.append({
                 "file": Path(r.path).name,

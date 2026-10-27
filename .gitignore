@@ -1,0 +1,13 @@
+# Datasets, training runs and models are too large for git
+data/
+runs/
+*.pt
+*.onnx
+*.whl
+
+# Belt-simulation outputs
+events.csv
+demo.mp4
+
+__pycache__/
+.streamlit/secrets.toml

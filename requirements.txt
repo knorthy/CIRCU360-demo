@@ -1,0 +1,11 @@
+# Install the GPU build of torch FIRST (otherwise pip picks the CPU-only build):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+# then:  pip install -r requirements.txt
+ultralytics
+scikit-learn
+onnx
+onnxslim
+onnxruntime
+streamlit
+plotly
+pandas

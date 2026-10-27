@@ -119,12 +119,18 @@ def decide(P, reject_t=0.30, accept_t=0.90, other_t=0.90):
   - The decision colours are the same as on the dashboard.
 - Tested: 80 items, decisions **identical (80/80)** to `test_predictions.csv`. End-to-end latency (pre-processing + model + post-processing) is 13.9 ms mean, 23.9 ms p95.
 - **Feed the camera the original image.** Pre-shrinking it (256 px, INTER_AREA) shifted borderline probabilities by up to 0.2 and flipped 3 of 20 decisions. That's a robustness point for the essay: items near the thresholds are sensitive to image scale.
-- `dashboard.py` has four sections:
-  1. Live counters, a class donut, decisions by class and a latency histogram, refreshed from `events.csv` every 2 s.
-  2. A reject_t slider that re-runs `decide()` on `test_predictions.csv`, the sweep chart and the confusion matrix.
-  3. A Sankey of the case mass flow with the oil ±9 band (interpreted as ±9 percentage points of yield).
-  4. Energy-balance inputs. The gas heating value and reactor demand start empty, and nothing is computed until a sourced value is entered.
-- Colours: classes use fixed categorical colours (HDPE blue, PET orange, OTHER aqua). Decisions use status colours, always with a text label.
+- `dashboard.py` is a multipage Streamlit app (redesigned with the Impeccable skill, 2026-10-28). It only sets up navigation and the sidebar `reject_t` slider (`st.session_state.reject_t`, shared by all pages). The pages are in `ui/`:
+  - `overview.py` (live, refreshes every 2 s): a row of resin-code columns (1 PET, 2 HDPE, 3 PVC, 4 LDPE, 5 PP, OTHER) with live counts, decision mix and route, the PET/PVC leak count, the latest items, and links to each stage.
+  - `feed.py`: the case feed (editable kg/day), composition, and where each class must go and why.
+  - `sorting.py`: walk one test image through `decide()` (the rule that fired is boxed), "try your own probabilities" sliders, and the threshold sweep, metrics and confusion matrix.
+  - `belt.py`: the camera→ejector timeline from `belt_timing()` (spec vs measured latency) and the latency histogram.
+  - `reactor.py`: the Sankey (editable reactor feed), and yields with the oil ±9 pp band.
+  - `energy.py`: energy-balance inputs. The gas heating value and reactor demand start empty, and nothing is computed until a sourced value is entered.
+- `ui/common.py` holds the colours, case numbers, loaders and HTML helpers. Every figure carries a basis tag: MEASURED / CASE BRIEF / SOURCED / ASSUMPTION.
+- The theme is in `.streamlit/config.toml`: white with black ink, square corners, and the Archivo font served from `static/fonts` (OFL), so it works offline. The design context is in `PRODUCT.md` and `.impeccable/surfaces/dashboard-py.md`.
+- `st.html` strips inline `<svg>`, so the resin badges are data-URI `<img>`s. Charts go through `chart()` in `ui/common.py` (white background, automargin).
+- Colours: classes use fixed categorical colours (HDPE blue, PET orange, OTHER aqua). Decisions use status colours (`DECISION_COLORS`, kept in sync with `belt_sim.py`), and text uses the darker `DECISION_INK`, always with a text label.
+- `demo.mp4` is written as mp4v, which browsers can't play, so the dashboard doesn't embed it.
 
 ## Style
 - Keep code simple and readable for students, with short comments and no over-engineering.

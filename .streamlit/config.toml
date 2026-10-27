@@ -1,0 +1,26 @@
+# CIRCU360 dashboard theme: white packaging print, black ink, one local face (works offline)
+[server]
+enableStaticServing = true      # serves ./static (the Archivo font) at app/static/
+
+[theme]
+base = "light"
+primaryColor = "#141414"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f1f1ee"
+textColor = "#141414"
+borderColor = "#141414"
+showWidgetBorder = true
+baseRadius = "none"
+font = "Archivo, sans-serif"
+headingFont = "Archivo, sans-serif"
+codeFont = "monospace"
+baseFontSize = 16
+
+[[theme.fontFaces]]
+family = "Archivo"
+url = "app/static/fonts/Archivo-Variable.ttf"
+weight = "100 900"
+
+[theme.sidebar]
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f1f1ee"

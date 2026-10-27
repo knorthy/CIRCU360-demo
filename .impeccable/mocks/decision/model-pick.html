@@ -1,0 +1,38 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--g:#ffffff;--ink:#141414;--muted:#4f4f4f;--rule:#d9d9d9;--ok:#0b7f0b;--rej:#c0302f;--rem:#6b6a66;--unc:#9a6a00;--hdpe:#2a78d6;--pet:#eb6834;--oth:#1baf7a;--ldpe:#eda100;--pp:#e87ba4;--pvc:#008300}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--g);color:var(--ink);font:15px/1.4 Archivo,sans-serif}
+nav{display:flex;align-items:center;gap:6px;padding:14px 28px;border-bottom:3px solid var(--ink)}
+nav b{font-size:22px;font-weight:800;margin-right:26px}
+nav a{padding:6px 12px;font-weight:600;color:var(--muted)}
+nav a.on{color:var(--ink);background:#eee}
+.cols{display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:24px 28px;border:1px solid var(--rule)}
+.col{padding:18px;border-right:1px solid var(--rule);text-align:center}
+.col:last-child{border:0}
+.tri{width:96px;height:86px;margin:0 auto 10px;position:relative}
+.tri svg{width:100%;height:100%}
+.tri b{position:absolute;left:0;right:0;top:34px;font-size:26px;font-weight:800}
+.col h3{font-size:20px;font-weight:800}
+.col .n{font-size:40px;font-weight:800;margin:6px 0}
+.col p{font-size:13px;color:var(--muted)}
+.dest{margin-top:10px;font-weight:800;font-size:13px;padding:6px;border:2px solid currentColor}
+.low{display:grid;grid-template-columns:1fr 380px;gap:24px;margin:0 28px}
+.card{border:1px solid var(--rule);padding:16px}
+.card h4{font-size:15px;margin-bottom:10px}
+.big{font-size:110px;font-weight:800;line-height:1}
+</style></head><body>
+<nav><b>CIRCU360</b><a class="on">Overview</a><a>Feed</a><a>AI sorting</a><a>Belt timing</a><a>Reactor</a><a>Yields</a><a>Energy</a></nav>
+<div class="cols">
+<div class="col"><div class="tri"><svg viewBox="0 0 100 90"><path d="M50 4L96 86H4z" fill="none" stroke="#eb6834" stroke-width="7"/></svg><b>1</b></div><h3>PET</h3><div class="n">19</div><p>items seen</p><div class="dest" style="color:var(--rej)">→ RECYCLERS</div></div>
+<div class="col"><div class="tri"><svg viewBox="0 0 100 90"><path d="M50 4L96 86H4z" fill="none" stroke="#2a78d6" stroke-width="7"/></svg><b>2</b></div><h3>HDPE</h3><div class="n">24</div><p>items seen</p><div class="dest" style="color:var(--ok)">→ REACTOR</div></div>
+<div class="col"><div class="tri"><svg viewBox="0 0 100 90"><path d="M50 4L96 86H4z" fill="none" stroke="#008300" stroke-width="7"/></svg><b>3</b></div><h3>PVC</h3><div class="n">—</div><p>not in dataset yet</p><div class="dest" style="color:var(--rej)">→ SPECIALIST</div></div>
+<div class="col"><div class="tri"><svg viewBox="0 0 100 90"><path d="M50 4L96 86H4z" fill="none" stroke="#eda100" stroke-width="7"/></svg><b>4</b></div><h3>LDPE</h3><div class="n">—</div><p>team photos pending</p><div class="dest" style="color:var(--ok)">→ REACTOR</div></div>
+<div class="col"><div class="tri"><svg viewBox="0 0 100 90"><path d="M50 4L96 86H4z" fill="none" stroke="#e87ba4" stroke-width="7"/></svg><b>5</b></div><h3>PP</h3><div class="n">—</div><p>team photos pending</p><div class="dest" style="color:var(--ok)">→ REACTOR</div></div>
+<div class="col"><div class="tri"><svg viewBox="0 0 100 90"><rect x="8" y="8" width="84" height="74" fill="none" stroke="#1baf7a" stroke-width="7"/></svg><b>—</b></div><h3>OTHER</h3><div class="n">20</div><p>cans, glass</p><div class="dest" style="color:var(--rem)">→ RESIDUE</div></div>
+</div>
+<div class="low"><div class="card"><h4>Latest items</h4><p>063 PET REJECT · 062 HDPE ACCEPT · 061 OTHER UNCERTAIN · 060 OTHER REMOVE</p></div>
+<div class="card"><h4>PET/PVC leaked into reactor</h4><div class="big">0</div></div></div>
+</body></html>

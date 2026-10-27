@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--acc:#2563eb;--ok:#0ca30c;--rej:#d03b3b;--unc:#c98a00;--rem:#8a8984}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--ink);font:15px/1.4 "Source Sans 3",sans-serif;display:grid;grid-template-columns:240px 1fr}
+aside{background:#fff;border-right:1px solid var(--line);padding:22px 16px}
+aside b{font-size:20px;display:block;margin-bottom:22px}
+aside a{display:block;padding:8px 10px;border-radius:6px;color:var(--muted);font-weight:600}
+aside a.on{background:#eef2ff;color:var(--acc)}
+main{padding:24px 28px;display:grid;grid-template-rows:auto auto 1fr;gap:18px}
+h1{font-size:26px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.k{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.k small{color:var(--muted);font-weight:600}
+.k div{font-size:30px;font-weight:700}
+.charts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.c h3{font-size:15px;margin-bottom:10px}
+.donut{width:180px;height:180px;border-radius:50%;margin:10px auto;background:conic-gradient(#2a78d6 0 38%,#eb6834 0 68%,#1baf7a 0);-webkit-mask:radial-gradient(circle,transparent 55%,#000 56%)}
+.bars{display:flex;align-items:end;gap:10px;height:200px;padding-top:10px}
+.bars i{flex:1;background:var(--acc);border-radius:3px 3px 0 0}
+</style></head><body>
+<aside><b>CIRCU360</b><a class="on">Overview</a><a>Feed</a><a>AI sorting</a><a>Belt timing</a><a>Reactor</a><a>Yields</a><a>Energy</a></aside>
+<main><h1>Micro-plant monitor</h1>
+<div class="kpis"><div class="k"><small>Items seen</small><div>63</div></div><div class="k"><small>ACCEPT</small><div style="color:var(--ok)">24</div></div><div class="k"><small>REJECT</small><div style="color:var(--rej)">19</div></div><div class="k"><small>UNCERTAIN</small><div style="color:var(--unc)">5</div></div><div class="k"><small>PET/PVC leaked</small><div>0</div></div></div>
+<div class="charts"><div class="c"><h3>Items by true class</h3><div class="donut"></div></div>
+<div class="c"><h3>Decision by class</h3><div class="bars"><i style="height:60%"></i><i style="height:45%;background:var(--rej)"></i><i style="height:35%;background:var(--rem)"></i><i style="height:12%;background:var(--unc)"></i></div></div>
+<div class="c"><h3>Latency (ms)</h3><div class="bars"><i style="height:20%"></i><i style="height:70%"></i><i style="height:95%"></i><i style="height:50%"></i><i style="height:22%"></i><i style="height:8%"></i></div></div></div>
+</main></body></html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;800&family=Barlow+Semi+Condensed:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--g:#eceef0;--panel:#fff;--ink:#121417;--muted:#4f555c;--rule:#d3d7dc;--alert:#e04f1a;--ok:#0b7f0b;--rej:#c0302f;--unc:#9a6a00;--rem:#6b6a66}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--g);color:var(--ink);font:15px/1.4 Barlow,sans-serif}
+nav{display:flex;gap:6px;padding:14px 28px;background:var(--ink);color:#fff;align-items:center}
+nav b{font-size:20px;font-weight:800;margin-right:24px}
+nav a{padding:6px 12px;font-weight:600;color:#c9ced4}
+nav a.on{color:#fff;border-bottom:3px solid var(--alert)}
+.pass{margin:22px 28px;background:var(--panel);display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr 150px;border-radius:10px;overflow:hidden}
+.seg{padding:16px 20px;border-right:2px dashed var(--rule)}
+.seg small{display:block;font:600 12px "Barlow Semi Condensed";color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.seg div{font-size:30px;font-weight:800}
+.code{background:repeating-linear-gradient(90deg,#121417 0 3px,#fff 3px 5px,#121417 5px 6px,#fff 6px 9px);}
+.board{margin:0 28px;background:var(--panel);border-radius:10px;overflow:hidden}
+.row{display:grid;grid-template-columns:90px 140px 1fr 140px 160px 220px;padding:12px 20px;border-bottom:1px solid var(--rule);font-size:17px;font-weight:600}
+.row.h{font:600 12px "Barlow Semi Condensed";color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.row.chg{background:#fff1ea;box-shadow:inset 4px 0 var(--alert)}
+.d{font-weight:800}
+</style></head><body>
+<nav><b>CIRCU360</b><a class="on">Live sorting</a><a>Feed</a><a>AI sorting</a><a>Belt timing</a><a>Reactor</a><a>Yields</a><a>Energy</a></nav>
+<div class="pass">
+<div class="seg"><small>Item</small><div>063 · PET603</div></div>
+<div class="seg"><small>P(PET+PVC)</small><div>0.985</div></div>
+<div class="seg"><small>Decision</small><div style="color:var(--rej)">REJECT</div></div>
+<div class="seg"><small>Ejector fires</small><div>+485 ms</div></div>
+<div class="seg"><small>Destination</small><div>Recyclers</div></div>
+<div class="code"></div></div>
+<div class="board">
+<div class="row h"><span>Item</span><span>Class</span><span>Probabilities</span><span>Latency</span><span>Decision</span><span>Destination</span></div>
+<div class="row chg"><span>063</span><span>PET</span><span>PET 0.985 · HDPE 0.004</span><span>17.2 ms</span><span class="d" style="color:var(--rej)">REJECT</span><span>Mechanical recyclers</span></div>
+<div class="row"><span>062</span><span>HDPE</span><span>HDPE 0.991</span><span>12.8 ms</span><span class="d" style="color:var(--ok)">ACCEPT</span><span>Pyrolysis reactor</span></div>
+<div class="row"><span>061</span><span>OTHER</span><span>OTHER 0.820 · HDPE 0.127</span><span>14.1 ms</span><span class="d" style="color:var(--unc)">UNCERTAIN</span><span>Manual check</span></div>
+<div class="row"><span>060</span><span>OTHER</span><span>OTHER 0.969</span><span>13.0 ms</span><span class="d" style="color:var(--rem)">REMOVE</span><span>Residue</span></div>
+<div class="row"><span>059</span><span>HDPE</span><span>HDPE 0.996</span><span>11.9 ms</span><span class="d" style="color:var(--ok)">ACCEPT</span><span>Pyrolysis reactor</span></div>
+<div class="row"><span>058</span><span>PET</span><span>PET 0.972</span><span>15.4 ms</span><span class="d" style="color:var(--rej)">REJECT</span><span>Mechanical recyclers</span></div>
+<div class="row"><span>057</span><span>HDPE</span><span>HDPE 0.989</span><span>13.3 ms</span><span class="d" style="color:var(--ok)">ACCEPT</span><span>Pyrolysis reactor</span></div>
+</div></body></html>

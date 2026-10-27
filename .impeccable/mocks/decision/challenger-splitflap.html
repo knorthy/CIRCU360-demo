@@ -1,0 +1,46 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--frame:#2b2e33;--flap:#111214;--paint:#f2f2ee;--muted:#9a9ea6;--amber:#f2a516;--ok:#2fc12f;--rej:#e5484d;--rem:#9a9ea6}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--frame);color:var(--paint);font:15px/1.4 Barlow,sans-serif}
+nav{display:flex;gap:6px;padding:14px 28px;border-bottom:1px solid #3a3e45;align-items:center}
+nav b{font:700 22px "Barlow Condensed";letter-spacing:.08em;margin-right:26px}
+nav a{padding:6px 12px;color:var(--muted);font-weight:600}
+nav a.on{color:var(--paint);border-bottom:2px solid var(--amber)}
+.wrap{display:grid;grid-template-columns:1fr 380px;gap:24px;padding:22px 28px}
+h2{font:700 15px "Barlow Condensed";letter-spacing:.14em;color:var(--muted);margin-bottom:10px}
+.board{background:var(--flap);padding:10px;border-radius:4px}
+.r{display:grid;grid-template-columns:70px 150px 1fr 150px 210px;gap:6px;margin-bottom:6px}
+.r>div{background:#1b1d20;border-top:1px solid #2c2f34;font:700 26px/48px "Barlow Condensed";letter-spacing:.12em;padding:0 12px;position:relative}
+.r>div::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#000}
+.r.h>div{background:none;border:0;font-size:13px;line-height:22px;color:var(--muted)}
+.r.h>div::after{display:none}
+.side>div{background:var(--flap);border-radius:4px;padding:18px;margin-bottom:16px}
+.big{font:700 120px/1 "Barlow Condensed"}
+.side small{font:700 13px "Barlow Condensed";letter-spacing:.14em;color:var(--muted)}
+.kv{display:flex;justify-content:space-between;font:600 20px "Barlow Condensed";padding:6px 0;border-bottom:1px solid #26292d}
+</style></head><body>
+<nav><b>CIRCU360</b><a class="on">Live board</a><a>Feed</a><a>AI sorting</a><a>Belt timing</a><a>Reactor</a><a>Yields</a><a>Energy</a></nav>
+<div class="wrap"><div>
+<h2>SORTING BOARD · NEWEST FIRST · reject_t 0.30</h2>
+<div class="board">
+<div class="r h"><div>ITEM</div><div>CLASS</div><div>P(PET+PVC) / P(POLY)</div><div>LATENCY</div><div>DECISION</div></div>
+<div class="r"><div>063</div><div>PET</div><div>0.985 / 0.004</div><div>17.2 MS</div><div style="color:var(--rej)">REJECT</div></div>
+<div class="r"><div>062</div><div>HDPE</div><div>0.002 / 0.991</div><div>12.8 MS</div><div style="color:var(--ok)">ACCEPT</div></div>
+<div class="r"><div>061</div><div>OTHER</div><div>0.054 / 0.127</div><div>14.1 MS</div><div style="color:var(--amber)">UNCERTAIN</div></div>
+<div class="r"><div>060</div><div>OTHER</div><div>0.010 / 0.021</div><div>13.0 MS</div><div style="color:var(--rem)">REMOVE</div></div>
+<div class="r"><div>059</div><div>HDPE</div><div>0.001 / 0.996</div><div>11.9 MS</div><div style="color:var(--ok)">ACCEPT</div></div>
+<div class="r"><div>058</div><div>PET</div><div>0.972 / 0.011</div><div>15.4 MS</div><div style="color:var(--rej)">REJECT</div></div>
+<div class="r"><div>057</div><div>HDPE</div><div>0.003 / 0.989</div><div>13.3 MS</div><div style="color:var(--ok)">ACCEPT</div></div>
+<div class="r"><div>056</div><div>HDPE</div><div>0.000 / 0.998</div><div>12.1 MS</div><div style="color:var(--ok)">ACCEPT</div></div>
+<div class="r"><div>055</div><div>PET</div><div>0.991 / 0.002</div><div>14.6 MS</div><div style="color:var(--rej)">REJECT</div></div>
+<div class="r"><div>054</div><div>OTHER</div><div>0.004 / 0.012</div><div>13.8 MS</div><div style="color:var(--rem)">REMOVE</div></div>
+<div class="r"><div>053</div><div>HDPE</div><div>0.002 / 0.993</div><div>12.4 MS</div><div style="color:var(--ok)">ACCEPT</div></div>
+</div></div>
+<div class="side">
+<div><small>PET / PVC LEAKED INTO REACTOR</small><div class="big">0</div><small>OF 19 CONTAMINANTS THIS RUN</small></div>
+<div><div class="kv"><span>To reactor</span><span>24</span></div><div class="kv"><span>To recyclers</span><span>19</span></div><div class="kv"><span>Residue</span><span>15</span></div><div class="kv"><span>Manual check</span><span style="color:var(--amber)">5</span></div></div>
+<div><div class="kv"><span>Mean latency</span><span>13.9 ms</span></div><div class="kv"><span>Ejector fires</span><span>+485 ms</span></div><div class="kv"><span>Reactor feed</span><span>1,700 kg/d</span></div></div>
+</div></div></body></html>

@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "wide-tracking",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-splitflap.html"
+        ],
+        "createdAt": "2026-10-27T17:39:39.357Z",
+        "reason": "Claude: throwaway decision-round sketch under .impeccable/mocks, not shipped UI"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-10-27T17:39:39.400Z",
+        "reason": "Claude: throwaway decision-round sketch under .impeccable/mocks, not shipped UI"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-journey.html"
+        ],
+        "createdAt": "2026-10-27T17:39:39.442Z",
+        "reason": "Claude: throwaway decision-round sketch under .impeccable/mocks, not shipped UI"
+      }
+    ]
+  }
+}

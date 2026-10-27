@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;800&family=Azeret+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--g:#f2f5f1;--plate:#fff;--ink:#17201a;--muted:#4d5a50;--rule:#c8d2c9;--leaf:#2f7d4a;--ok:#0b7f0b;--rej:#c0302f;--pet:#eb6834}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--g);color:var(--ink);font:15px/1.45 "Hanken Grotesk",sans-serif}
+nav{display:flex;gap:6px;padding:14px 28px;border-bottom:1px solid var(--rule);align-items:center;background:var(--plate)}
+nav b{font-size:20px;font-weight:800;margin-right:24px}
+nav a{padding:6px 12px;font-weight:600;color:var(--muted)}
+nav a.on{color:var(--leaf);border-bottom:3px solid var(--leaf)}
+h1{font-size:28px;font-weight:800;margin:22px 28px 4px}
+.sub{margin:0 28px 18px;color:var(--muted)}
+.plates{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:0 28px}
+.p{background:var(--plate);border:1px solid var(--rule);height:520px;display:flex;flex-direction:column}
+.p .img{height:220px;border-bottom:1px solid var(--rule);display:grid;place-items:center;background:#e9eee8}
+.p .img i{width:70px;height:150px;border-radius:18px 18px 8px 8px;background:var(--pet);opacity:.85}
+.p .t{padding:14px 16px;flex:1}
+.p small{font:500 12px "Azeret Mono";color:var(--muted);letter-spacing:.06em}
+.p h3{font-size:20px;font-weight:800;margin:4px 0 8px}
+.bar{display:grid;grid-template-columns:60px 1fr 50px;gap:8px;font:500 12px "Azeret Mono";align-items:center;margin:5px 0}
+.bar span:nth-child(2){height:10px;background:#e3e8e2;position:relative}
+.bar span:nth-child(2) b{position:absolute;inset:0 auto 0 0;background:var(--pet)}
+.base{display:flex;gap:16px;margin:16px 28px;align-items:center}
+.base button{font:600 15px "Hanken Grotesk";padding:10px 18px;border:1px solid var(--ink);background:var(--plate)}
+.base button.pri{background:var(--leaf);color:#fff;border-color:var(--leaf)}
+</style></head><body>
+<nav><b>CIRCU360</b><a class="on">Follow one item</a><a>Plant overview</a><a>AI sorting</a><a>Belt timing</a><a>Reactor</a><a>Yields</a><a>Energy</a></nav>
+<h1>Item 063 · PET bottle</h1><p class="sub">The same item, at the same scale, through every stage of the plant.</p>
+<div class="plates">
+<div class="p"><div class="img"><i></i></div><div class="t"><small>01 · FEED</small><h3>Arrives on belt</h3><p>One of 2,000 kg/day of mixed coastal plastic.</p></div></div>
+<div class="p"><div class="img"><i></i></div><div class="t"><small>02 · CAMERA + AI</small><h3>Classified in 17.2 ms</h3>
+<div class="bar"><span>PET</span><span><b style="width:98%"></b></span><span>0.985</span></div>
+<div class="bar"><span>OTHER</span><span><b style="width:2%"></b></span><span>0.011</span></div>
+<div class="bar"><span>HDPE</span><span><b style="width:1%"></b></span><span>0.004</span></div></div></div>
+<div class="p"><div class="img"><i></i></div><div class="t"><small>03 · DECISION</small><h3 style="color:var(--rej)">REJECT</h3><p>P(PET)+P(PVC) = 0.985 &gt; 0.30. Checked first, so it can never be accepted.</p></div></div>
+<div class="p"><div class="img"><i></i></div><div class="t"><small>04 · EJECTOR</small><h3>Air jet at +485 ms</h3><p>400 mm downstream at 0.8 m/s, minus 15 ms valve delay (assumption).</p></div></div>
+<div class="p"><div class="img"><i></i></div><div class="t"><small>05 · DESTINATION</small><h3>Mechanical recyclers</h3><p>Kept out of the 430 °C pyrolysis reactor.</p></div></div>
+</div>
+<div class="base"><button>← Item 062</button><button class="pri">Next item →</button><span>reject_t 0.30</span></div>
+</body></html>

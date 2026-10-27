@@ -1,0 +1,626 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- CIRCU360 3D plant. Rendered by ui/plant3d.py, which replaces __DATA__ with live numbers.
+     three.js is served locally from static/three (works offline). -->
+<script type="importmap">
+{ "imports": { "three": "/app/static/three/three.module.min.js",
+               "three/addons/OrbitControls.js": "/app/static/three/OrbitControls.js" } }
+</script>
+<style>
+@font-face { font-family: Archivo; src: url("/app/static/fonts/Archivo-Variable.ttf"); font-weight: 100 900; }
+:root { --ink:#141414; --paper:#f1f1ee; --rule:#d6d6d0; --muted:#3d3d3a; }
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; background:var(--paper); color:var(--ink);
+             font-family: Archivo, sans-serif; font-variant-numeric: tabular-nums; overflow:hidden; }
+::selection { background:var(--ink); color:#fff; }
+#stage { position:relative; width:100%; height:100%; }
+canvas { display:block; outline:none; }
+button { font:inherit; color:inherit; cursor:pointer; }
+button:focus-visible { outline:3px solid #2a78d6; outline-offset:2px; }
+
+/* floating part labels */
+.lbl { position:absolute; left:0; top:0; display:flex; align-items:center; gap:.45rem; white-space:nowrap;
+       background:#fff; border:1.5px solid var(--ink); padding:.32rem .5rem .32rem .55rem; font-size:13px;
+       transform-origin:50% 100%; transition: background .15s, color .15s; will-change: transform; }
+.lbl b { font-weight:800; letter-spacing:.04em; }
+.lbl svg { width:12px; height:12px; }
+.lbl::after { content:""; position:absolute; left:50%; top:100%; width:1.5px; height:16px; background:var(--ink); }
+.lbl:hover, .lbl.on { background:var(--ink); color:#fff; }
+.lbl.dim { opacity:.35; }
+body.nolabels .lbl { display:none; }
+
+/* top-left heading + controls */
+#hud { position:absolute; left:16px; top:14px; max-width:430px; pointer-events:none; }
+#hud h1 { font-size:20px; font-weight:800; margin:0; letter-spacing:-.01em; }
+#hud p { font-size:13px; margin:.25rem 0 0; color:var(--muted); line-height:1.4; }
+#last { margin-top:.55rem; font-size:13px; font-weight:600; display:flex; gap:.4rem; align-items:center; min-height:24px; }
+.tag { display:inline-block; font-weight:800; font-size:11.5px; letter-spacing:.06em; border:2px solid currentColor; padding:0 .35rem; line-height:1.5; }
+#tools { position:absolute; left:16px; bottom:14px; display:flex; gap:6px; }
+#tools button { background:#fff; border:1.5px solid var(--ink); padding:.35rem .7rem; font-size:13px; font-weight:600; }
+#tools button:hover { background:var(--ink); color:#fff; }
+#legend { position:absolute; right:16px; bottom:14px; display:flex; gap:10px; font-size:12px; font-weight:600;
+          background:rgba(255,255,255,.85); border:1px solid var(--rule); padding:.35rem .6rem; }
+#legend span { display:flex; align-items:center; gap:4px; }
+#legend i { width:10px; height:10px; display:inline-block; }
+
+/* part detail panel */
+#panel { position:absolute; top:0; right:0; bottom:0; width:360px; max-width:92%; background:#fff;
+         border-left:3px solid var(--ink); padding:18px 20px 20px; overflow:auto;
+         transform:translateX(105%); transition: transform .32s cubic-bezier(.16,1,.3,1); }
+#panel.open { transform:none; }
+#panel .code { font-weight:800; font-size:13px; letter-spacing:.08em; border:1.5px solid var(--ink); padding:0 .35rem; }
+#panel h2 { font-size:24px; font-weight:800; margin:.5rem 0 .4rem; letter-spacing:-.01em; line-height:1.15; }
+#panel p { font-size:14px; line-height:1.5; margin:.3rem 0 .6rem; }
+#panel .row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:.5rem 0; border-bottom:1px solid var(--rule); }
+#panel .row .k { font-size:13px; color:var(--muted); font-weight:600; }
+#panel .row .v { font-size:17px; font-weight:800; text-align:right; }
+#panel .row .v small { display:block; font-size:11.5px; font-weight:600; color:var(--muted); }
+#panel .rows { border-top:2px solid var(--ink); margin-top:.6rem; }
+#panel h3 { font-size:14px; font-weight:800; margin:1rem 0 .3rem; }
+.basis { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.07em; border:1px solid currentColor; padding:0 .25rem; margin-left:.3rem; vertical-align:middle; line-height:1.5; }
+.bar { display:grid; grid-template-columns:52px 1fr 44px; gap:6px; align-items:center; font-size:12px; font-weight:600; margin:3px 0; }
+.bar span:nth-child(2) { height:9px; background:#ececE8; position:relative; }
+.bar span:nth-child(2) i { position:absolute; inset:0 auto 0 0; }
+.more { margin-top:1rem; font-size:13px; background:var(--paper); border:1px solid var(--ink); padding:.5rem .65rem; }
+#panel.wide { width:620px; }
+#feedBox { display:none; margin:.2rem 0 .8rem; }
+#panel.wide #feedBox { display:block; }
+#feedBox .frame { position:relative; background:#1b1b1a; aspect-ratio:1400/440; border:1.5px solid var(--ink); }
+#feedBox img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
+#feedBox img:not([src]) { display:none; }      /* no frame yet: show only the message */
+#feedBox .msg { position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding:1rem;
+                color:#fff; font-size:14px; font-weight:600; background:rgba(20,20,20,.72); }
+#feedBox .cap { display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-top:.35rem; color:var(--muted); }
+.dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#b9b9b2; margin-right:5px; vertical-align:middle; }
+.dot.on { background:#0ca30c; }
+#close { position:absolute; top:12px; right:12px; background:#fff; border:1.5px solid var(--ink); width:30px; height:30px; padding:0; display:grid; place-items:center; }
+#close:hover { background:var(--ink); color:#fff; }
+#err { position:absolute; inset:0; display:none; place-items:center; text-align:center; padding:2rem; font-size:15px; }
+@media (prefers-reduced-motion: reduce) { #panel { transition:none; } }
+</style></head>
+<body>
+<div id="stage">
+  <div id="hud">
+    <h1>CIRCU360 micro-plant</h1>
+    <p id="sub"></p>
+    <div id="last"></div>
+  </div>
+  <div id="labels"></div>
+  <div id="tools">
+    <button id="pause" type="button">Pause flow</button>
+    <button id="reset" type="button">Reset view</button>
+    <button id="toggle" type="button">Hide labels</button>
+  </div>
+  <div id="legend"></div>
+  <aside id="panel" aria-live="polite">
+    <button id="close" type="button" aria-label="Close panel">
+      <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+    <div id="feedHead"></div>
+    <div id="feedBox">
+      <div class="frame"><img id="feedImg" alt="Live frame from belt_sim.py"><div class="msg" id="feedMsg"></div></div>
+      <div class="cap"><span id="feedState"></span><span>python belt_sim.py</span></div>
+    </div>
+    <div id="panelBody"></div>
+  </aside>
+  <div id="err">3D view could not start (WebGL unavailable). The stage pages in the sidebar show the same information.</div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/OrbitControls.js";
+
+const DATA = __DATA__;
+const INK = 0x141414;
+const CLASS = DATA.class_colors, DEC = DATA.decision_colors, DEC_INK = DATA.decision_ink;
+const BASIS = { measured:["MEASURED","#0e5a8a"], case:["CASE BRIEF","#5c5b57"], sourced:["SOURCED","#5a3e9e"], assumption:["ASSUMPTION","#875c00"] };
+const SLOW = 5;                              // animation runs 5x slower than the real 0.8 m/s belt
+const fmt = (n, d = 0) => Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const basis = k => `<span class="basis" style="color:${BASIS[k][1]}">${BASIS[k][0]}</span>`;
+const tag = d => `<span class="tag" style="color:${DEC_INK[d]}">${d}</span>`;
+
+// ---------- renderer, camera, light ----------
+const stage = document.getElementById("stage");
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias:true }); }
+catch (e) { document.getElementById("err").style.display = "grid"; throw e; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf1f1ee);
+const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 200);
+const HOME = { pos:new THREE.Vector3(-16, 18, 20), target:new THREE.Vector3(1.5, 2.2, 0), zoom:1 };
+camera.position.copy(HOME.pos);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(HOME.target);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.45;
+controls.minZoom = 0.6; controls.maxZoom = 4;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d9d2, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(-10, 22, 12);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left:-20, right:20, top:20, bottom:-20 });
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+
+// ---------- building blocks: white solids with black ink edges ----------
+const parts = {};                            // code -> THREE.Group
+function part(code) {
+  if (!parts[code]) { const g = new THREE.Group(); g.userData.code = code; scene.add(g); parts[code] = g; }
+  return parts[code];
+}
+function solid(geo, color, parent, pos = [0,0,0], rot = [0,0,0], edges = true) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness:.85, metalness:.05, transparent:true });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(...pos); m.rotation.set(...rot);
+  m.castShadow = m.receiveShadow = true;
+  if (!edges) mat.depthWrite = false;       // effects (flash, puffs) must not hide what is behind them
+  if (edges) {
+    const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 25),
+      new THREE.LineBasicMaterial({ color:INK, transparent:true, opacity:.7 }));
+    m.add(line);
+  }
+  parent.add(m);
+  return m;
+}
+const box = (w, h, d, c, parent, pos, rot) => solid(new THREE.BoxGeometry(w, h, d), c, parent, pos, rot);
+const cyl = (rt, rb, h, c, parent, pos, rot, seg = 24) => solid(new THREE.CylinderGeometry(rt, rb, h, seg), c, parent, pos, rot);
+const WHITE = 0xfbfbf9, LIGHT = 0xe4e4df, MID = 0xb9b9b2, DARK = 0x3a3a38;
+
+// ground slab
+const slab = solid(new THREE.BoxGeometry(30, 0.3, 15), 0xffffff, scene, [0.5, -0.15, -0.5]);
+slab.material.transparent = false;
+
+// ---------- layout (1 unit = 0.1 m along the belt, so camera -> ejector = 4 units = 0.4 m) ----------
+const BELT_Z = -3.2, BELT_Y = 1.45, BELT_START = -11, BELT_END = 1.5;
+const CAM_X = -7, EJ_X = CAM_X + DATA.timing.ejector_m * 10;
+
+// FD feed hopper
+{
+  const g = part("FD");
+  for (const [x, z] of [[-1,-1],[1,-1],[-1,1],[1,1]]) box(.15, 2.4, .15, MID, g, [-12.4 + x*.75, 1.2, BELT_Z + z*.75]);
+  cyl(1.5, .45, 1.6, WHITE, g, [-12.4, 3.1, BELT_Z], [0, Math.PI/4, 0], 4);
+  box(.7, .25, .9, LIGHT, g, [-11.6, 2.05, BELT_Z], [0, 0, -0.5]);
+  const colors = [CLASS.HDPE, CLASS.PET, CLASS.LDPE, CLASS.PP, CLASS.OTHER];
+  for (let i = 0; i < 14; i++)
+    box(.28, .18, .22, colors[i % colors.length], g, [-12.4 + (Math.random()-.5)*1.4, 3.92, BELT_Z + (Math.random()-.5)*1.4], [0, Math.random()*3, 0]);
+}
+// CV conveyor belt
+{
+  const g = part("CV"), len = BELT_END - BELT_START + 0.6, cx = (BELT_START + BELT_END) / 2;
+  box(len, .3, 1.5, LIGHT, g, [cx, BELT_Y - .25, BELT_Z]);
+  const belt = box(len - .2, .06, 1.2, DARK, g, [cx, BELT_Y - .07, BELT_Z]);
+  belt.children[0].material.opacity = .2;
+  for (const x of [BELT_START - .2, BELT_END + .2]) cyl(.2, .2, 1.3, MID, g, [x, BELT_Y - .2, BELT_Z], [Math.PI/2, 0, 0]);
+  for (let x = BELT_START + .5; x <= BELT_END; x += 3)
+    for (const dz of [-.65, .65]) box(.12, BELT_Y - .4, .12, MID, g, [x, (BELT_Y - .4)/2, BELT_Z + dz]);
+  for (let x = BELT_START + .8; x < BELT_END; x += 1.2) box(.03, .02, 1.2, 0x55554f, g, [x, BELT_Y - .03, BELT_Z]);
+}
+// CAM camera gantry + AI box
+let scanPad;
+{
+  const g = part("CAM");
+  for (const dz of [-1, 1]) box(.16, 3.2, .16, MID, g, [CAM_X, 1.6, BELT_Z + dz]);
+  box(.2, .2, 2.2, MID, g, [CAM_X, 3.2, BELT_Z]);
+  box(.6, .45, .5, WHITE, g, [CAM_X, 2.85, BELT_Z]);
+  cyl(.13, .13, .2, DARK, g, [CAM_X, 2.55, BELT_Z]);
+  box(.9, .7, .5, WHITE, g, [CAM_X, .35, BELT_Z - 1.6]);          // edge computer (runs the model)
+  box(.5, .06, .02, 0x2a78d6, g, [CAM_X, .55, BELT_Z - 1.34]);
+  scanPad = solid(new THREE.PlaneGeometry(1.2, 1.1), 0xffffff, g, [CAM_X, BELT_Y - .02, BELT_Z], [-Math.PI/2, 0, 0], false);
+  scanPad.material.opacity = 0;
+}
+// EJ air ejector
+let puff;
+{
+  const g = part("EJ");
+  box(.25, 1.2, .25, MID, g, [EJ_X, .9, BELT_Z - 1.05]);
+  box(.35, .3, .5, WHITE, g, [EJ_X, BELT_Y + .05, BELT_Z - .95]);
+  cyl(.06, .09, .35, DARK, g, [EJ_X, BELT_Y + .05, BELT_Z - .6], [Math.PI/2, 0, 0]);
+  box(.5, .25, .35, WHITE, g, [EJ_X - .2, .2, BELT_Z - 1.3]);       // valve block
+  puff = solid(new THREE.SphereGeometry(.35, 16, 12), 0xffffff, g, [EJ_X, BELT_Y + .1, BELT_Z - .2], [0,0,0], false);
+  puff.material.opacity = 0;
+}
+// RB reject bin (PET / PVC)
+const RB_POS = new THREE.Vector3(EJ_X + .3, 0, BELT_Z + 2.1);
+{
+  const g = part("RB");
+  const b = box(1.8, 1.1, 1.4, WHITE, g, [RB_POS.x, .55, RB_POS.z]);
+  box(1.82, .14, 1.42, DEC.REJECT, g, [RB_POS.x, 1.04, RB_POS.z]);
+  box(.9, .06, 1.2, LIGHT, g, [RB_POS.x - .2, 1.3, BELT_Z + 1.15], [.5, 0, 0]);   // chute
+}
+// MC manual check station at the end of the belt (layout is an assumption)
+const MC_BINS = { REMOVE: new THREE.Vector3(BELT_END + .3, 0, BELT_Z - 2.1), UNCERTAIN: new THREE.Vector3(BELT_END - 1.6, 0, BELT_Z - 2.1) };
+{
+  const g = part("MC");
+  for (const [d, p] of Object.entries(MC_BINS)) {
+    box(1.3, .8, 1.1, WHITE, g, [p.x, .4, p.z]);
+    box(1.32, .12, 1.12, DEC[d], g, [p.x, .76, p.z]);
+  }
+  box(.12, 1.1, .12, MID, g, [BELT_END - .65, .55, BELT_Z - 2.9]);
+}
+// incline conveyor up to the reactor feed hopper (part of the reactor system)
+const INC_A = new THREE.Vector3(BELT_END + .6, BELT_Y, BELT_Z);
+const INC_B = new THREE.Vector3(4.6, 3.75, 1.4);
+// RX containerized screw pyrolysis reactor
+let screw, heater;
+{
+  const g = part("RX");
+  const dir = new THREE.Vector3().subVectors(INC_B, INC_A), L = dir.length();
+  const inc = box(L, .18, .9, LIGHT, g, [0,0,0]);
+  inc.position.copy(INC_A).addScaledVector(dir, .5).add(new THREE.Vector3(0, -.12, 0));
+  inc.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0), dir.clone().normalize());
+  box(.12, 2.2, .12, MID, g, [3.2, 1.1, -.2]);
+  // container: floor, roof, far wall, end walls; the near side is left open so the reactor is visible
+  const CX = 7.6, CZ = 1.6, CW = 7.4, CD = 2.6, CH = 2.7;
+  box(CW, .14, CD, LIGHT, g, [CX, .07, CZ]);
+  box(CW, .14, CD, 0xdcdcd6, g, [CX, CH, CZ]);
+  box(CW, CH, .08, 0xe9e9e4, g, [CX, CH/2, CZ - CD/2]);
+  for (const s of [-1, 1]) box(.08, CH, CD, 0xe9e9e4, g, [CX + s*CW/2, CH/2, CZ]);
+  for (let x = CX - CW/2 + .4; x < CX + CW/2; x += .5) box(.04, CH - .2, .02, 0xd2d2cc, g, [x, CH/2, CZ - CD/2 + .05]);
+  // feed hopper on the roof, screw tube, heater jacket, drive motor
+  cyl(.75, .25, .9, WHITE, g, [4.6, CH + .5, 1.4], [0, Math.PI/4, 0], 4);
+  cyl(.25, .25, CH - 1.2, LIGHT, g, [4.6, 1.8, 1.4]);
+  const tube = cyl(.55, .55, 5.4, WHITE, g, [7.6, 1.15, 1.4], [0, 0, Math.PI/2]);
+  tube.material.opacity = .55;
+  heater = cyl(.68, .68, 3.2, 0xeb6834, g, [7.9, 1.15, 1.4], [0, 0, Math.PI/2]);
+  heater.material.opacity = .45; heater.material.emissive = new THREE.Color(0xeb6834);
+  screw = new THREE.Group(); screw.position.set(7.6, 1.15, 1.4); g.add(screw);
+  cyl(.08, .08, 5.2, DARK, screw, [0,0,0], [0, 0, Math.PI/2]);
+  for (let i = 0; i < 18; i++) box(.05, .8, .14, MID, screw, [-2.4 + i*.28, 0, 0], [i*.6, 0, 0]);
+  box(.7, .7, .7, MID, g, [4.6, 1.15, 2.4]);
+  for (const x of [5.6, 9.6]) box(.25, 1.1, .25, MID, g, [x, .55, 1.4]);
+}
+// CD condenser
+{
+  const g = part("CD");
+  cyl(.5, .5, 3.2, WHITE, g, [12.2, 1.75, 0.6]);
+  for (let y = .6; y < 3.2; y += .45) cyl(.56, .56, .05, MID, g, [12.2, y, 0.6]);
+  cyl(.12, .12, 2.2, LIGHT, g, [11.25, 1.6, 1.4], [0, 0, Math.PI/2]);       // vapour line from reactor
+  cyl(.12, .12, 1.0, LIGHT, g, [12.2, 3.4, 1.0], [Math.PI/2, 0, 0]);
+}
+// OT oil tank
+let oilLevel;
+{
+  const g = part("OT");
+  const t = cyl(.95, .95, 2.2, WHITE, g, [13.4, 1.1, -2.2]);
+  t.material.opacity = .5;
+  oilLevel = cyl(.9, .9, 1, 0x2b2620, g, [13.4, .5, -2.2], [0,0,0], 24);
+  oilLevel.children[0].visible = false;
+  cyl(.1, .1, 2.6, LIGHT, g, [12.8, .35, -.8], [Math.PI/2.6, 0, 0]);
+}
+// GS gas outlet (to the burner)
+const puffs = [];
+{
+  const g = part("GS");
+  cyl(.14, .14, 2.2, LIGHT, g, [12.2, 4.4, 0.6]);
+  cyl(.22, .22, .25, DARK, g, [12.2, 5.5, 0.6]);
+  box(.9, .12, .12, LIGHT, g, [11.75, 4.2, 0.6]);
+  for (let i = 0; i < 4; i++) {
+    const p = solid(new THREE.SphereGeometry(.22, 12, 10), 0xffffff, g, [12.2, 5.7, 0.6], [0,0,0], false);
+    p.material.opacity = 0; p.userData.t = i / 4; puffs.push(p);
+  }
+}
+// CH char bin
+{
+  const g = part("CH");
+  box(1.3, .9, 1.1, 0x5c5b57, g, [10.6, .45, 3.6]);
+  cyl(.15, .15, .9, LIGHT, g, [10.3, 1.0, 2.9], [.6, 0, 0]);
+}
+
+// label anchors and text
+const PARTS = {
+  FD:["Feed hopper",            [-12.4, 4.4, BELT_Z]],
+  CV:["Conveyor belt",          [-9.5, 1.7, BELT_Z + .8]],
+  CAM:["Camera + AI",           [CAM_X - 1.3, 3.9, BELT_Z]],
+  EJ:["Air ejector",            [EJ_X - .2, 1.1, BELT_Z - 1.4]],
+  RB:["Reject bin",             [RB_POS.x, 1.4, RB_POS.z]],
+  MC:["Manual check",           [BELT_END - .2, 1.0, BELT_Z - 2.6]],
+  RX:["Pyrolysis reactor",      [7.6, 3.0, 1.6]],
+  CD:["Condenser",              [11.4, 2.9, 2.8]],
+  OT:["Oil tank",               [14.8, .4, -1.4]],
+  GS:["Gas outlet",             [12.2, 5.9, .6]],
+  CH:["Char bin",               [10.6, 1.1, 3.6]],
+};
+
+// ---------- items on the belt, replaying real decisions ----------
+const replay = DATA.replay.length ? DATA.replay : [{ c:"HDPE", d:"ACCEPT", p:{ HDPE:1 } }];
+const SPEED = DATA.timing.belt_m_s * 10 / SLOW;      // units per second in the animation
+const items = [];
+let replayIdx = 0, spawnT = 0, lastScan = null, paused = false;
+function itemMesh(c) {
+  const g = new THREE.Group(), col = CLASS[c] || 0x888888;
+  if (c === "PET" || c === "PVC") { cyl(.16, .16, .62, col, g, [0, .17, 0], [0, 0, Math.PI/2]); cyl(.07, .07, .14, col, g, [.37, .17, 0], [0, 0, Math.PI/2]); }
+  else if (c === "OTHER") cyl(.17, .17, .4, col, g, [0, .2, 0]);
+  else { box(.42, .38, .3, col, g, [0, .19, 0]); cyl(.06, .06, .12, col, g, [.1, .44, 0]); }
+  scene.add(g);
+  return g;
+}
+function spawn(ev = replay[replayIdx++ % replay.length]) {
+  const m = itemMesh(ev.c);
+  m.position.set(BELT_START + .3, BELT_Y, BELT_Z + (Math.random() - .5) * .5);
+  m.rotation.y = (Math.random() - .5) * .8;
+  items.push({ m, ev, stage:"belt", t:0, v:new THREE.Vector3() });
+}
+function remove(it) { scene.remove(it.m); it.dead = true; }
+function stepItems(dt) {
+  for (const it of items) {
+    const p = it.m.position;
+    if (it.stage === "belt") {
+      p.x += SPEED * dt;
+      if (!it.scanned && p.x >= CAM_X) { it.scanned = true; onScan(it.ev); }
+      if (it.ev.d === "REJECT" && p.x >= EJ_X) { it.stage = "eject"; it.v.set(.4, 3.2, 3.4); puff.material.opacity = .8; puff.scale.setScalar(.6); }
+      else if (p.x >= BELT_END) {
+        if (it.ev.d === "ACCEPT") { it.stage = "incline"; it.t = 0; }
+        else { it.stage = "manual"; it.t = 0; it.from = p.clone(); it.to = MC_BINS[it.ev.d] || MC_BINS.UNCERTAIN; }
+      }
+    } else if (it.stage === "eject") {
+      it.v.y -= 9.8 * dt; p.addScaledVector(it.v, dt); it.m.rotation.x += 6 * dt;
+      if (p.z > RB_POS.z - .3 && p.y < 1.0) remove(it);
+    } else if (it.stage === "incline") {
+      it.t += dt * SPEED / INC_A.distanceTo(INC_B);
+      p.lerpVectors(INC_A, INC_B, Math.min(it.t, 1));
+      if (it.t >= 1.1) remove(it);
+    } else if (it.stage === "manual") {
+      it.t += dt * 1.6;
+      p.lerpVectors(it.from, it.to, Math.min(it.t, 1)); p.y = BELT_Y + Math.sin(Math.min(it.t, 1) * Math.PI) * .6 - it.t * .9;
+      if (it.t >= 1) remove(it);
+    }
+  }
+  for (let i = items.length - 1; i >= 0; i--) if (items[i].dead) items.splice(i, 1);
+}
+function onScan(ev) {
+  lastScan = ev;
+  scanPad.material.color.set(DEC[ev.d]); scanPad.material.opacity = .9;
+  document.getElementById("last").innerHTML = `Last item at the camera: <b>${ev.c}</b> → ${tag(ev.d)}`;
+  if (selected === "CAM") renderPanel("CAM");
+}
+
+// ---------- part detail panel ----------
+const L = DATA.live, T = DATA.timing, C = DATA.case;
+function rows(list) {
+  return `<div class="rows">${list.map(([k, v, b, note]) =>
+    `<div class="row"><span class="k">${k}${b ? basis(b) : ""}</span><span class="v">${v}${note ? `<small>${note}</small>` : ""}</span></div>`).join("")}</div>`;
+}
+const more = (page) => `<div class="more">More detail: <b>${page}</b> in the sidebar.</div>`;
+const liveOr = (fn, msg = "No belt data yet: run python belt_sim.py") => L.n ? fn() : `<p><i>${msg}</i></p>`;
+const CONTENT = {
+  FD: () => `<p>Mixed plastic collected from the coast in Indonesia and the Philippines is tipped in here and metered onto the sorting belt.</p>` +
+    rows([["Mixed feed", `${fmt(C.feed)} kg/day`, "case"],
+          ["Sorting rate", `${C.sort_rate} kg/h`, "case", `${fmt(C.feed / C.sort_rate, 1)} h/day, two shifts`],
+          ...Object.entries(C.composition).map(([k, v]) => [k, `${fmt(v)} kg/day`, "case", `${fmt(v / C.feed * 100)}%`])]) + more("1 Mixed feed"),
+  CV: () => `<p>The belt carries items one by one under the camera. In this view the belt runs ${SLOW}× slower than real life so you can follow each item.</p>` +
+    rows([["Belt speed", `${T.belt_m_s} m/s`, "case"],
+          ["Belt travel per camera frame", `${fmt(T.mm_per_frame, 1)} mm`, "case", `${T.fps} fps camera`],
+          ["Belt travel during 35 ms inference", `${fmt(T.mm_during_inference)} mm`, "case"]]) + more("3 Belt & ejector"),
+  CAM: () => `<p>A ${T.fps} fps camera photographs each item. A YOLO11n-cls classifier on the edge computer gives a probability for every class, and <b>decide()</b> turns them into one decision. PET/PVC is checked first, so it can never be accepted.</p>` +
+    rows([["Test accuracy", `${fmt(DATA.test.accuracy * 100, 1)}%`, "measured", `${DATA.test.n} test images`],
+          ["Latency, mean / p95", L.n ? `${fmt(L.lat_mean, 1)} / ${fmt(L.lat_p95, 1)} ms` : "—", "measured", "spec 35 ms"],
+          ["Reject threshold", DATA.reject_t.toFixed(2), null, "REJECT if P(PET)+P(PVC) > reject_t"]]) +
+    (lastScan ? `<h3>Last item in this view: ${lastScan.c} → ${tag(lastScan.d)}</h3>` +
+      Object.entries(lastScan.p).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+        `<div class="bar"><span>${k}</span><span><i style="width:${v * 100}%;background:${CLASS[k] ? "#" + CLASS[k].toString(16).padStart(6, "0") : "#888"}"></i></span><span>${v.toFixed(3)}</span></div>`).join("") : "") +
+    more("2 AI sorting"),
+  EJ: () => `<p>${fmt(T.ejector_m * 1000)} mm after the camera, an air jet blows REJECT items (PET/PVC) off the belt into the reject bin. It fires at capture time + travel time − valve delay.</p>` +
+    rows([["Fires after capture", `${fmt(T.fire_ms)} ms`, "assumption", `${fmt(T.ejector_m * 1000)} mm ÷ ${T.belt_m_s} m/s − ${T.valve_ms} ms`],
+          ["Slack after a 35 ms decision", `${fmt(T.slack_ms)} ms`, "assumption"],
+          ["Ejector distance", `${fmt(T.ejector_m * 1000)} mm`, "assumption"],
+          ["Valve delay", `${T.valve_ms} ms`, "assumption", "not sourced"]]) + more("3 Belt & ejector"),
+  RB: () => `<p>Everything the ejector blows off lands here. PET goes to mechanical recyclers. PVC goes to specialist disposal because it releases about 58 wt% of its mass as HCl when heated.</p>` +
+    rows([["PET in the feed", `${fmt(C.composition.PET)} kg/day`, "case"],
+          ["REJECTed this belt run", liveOr(() => `${L.counts.REJECT} items`, "—"), L.n ? "measured" : null],
+          ["PET/PVC leaked into reactor", L.n ? `${L.leaked} of ${L.contam}` : "—", L.n ? "measured" : null],
+          ["PET leaks on the test set", `0 of ${DATA.test.pet_n}`, "measured", "at every reject_t 0.05–0.95"]]) + more("2 AI sorting"),
+  MC: () => `<p>Items that are not ejected ride to the end of the belt. ACCEPT items continue to the reactor. REMOVE (cans, glass, dirt) and UNCERTAIN items are taken off here for the non-plastic stream or a manual / float-sink check.</p>` +
+    rows([["REMOVE this belt run", L.n ? `${L.counts.REMOVE} items` : "—", L.n ? "measured" : null],
+          ["UNCERTAIN this belt run", L.n ? `${L.counts.UNCERTAIN} items` : "—", L.n ? "measured" : null],
+          ["Dirt / non-plastic in feed", `${fmt(C.composition["Dirt / non-plastic"])} kg/day`, "case"],
+          ["Station layout", "illustrative", "assumption", "the simulation only ejects REJECT"]]),
+  RX: () => `<p>Only polyolefins (HDPE, LDPE, PP) climb the incline into this containerized screw reactor. The screw pushes the plastic through a heated tube at about ${C.reactor_temp} °C, where it cracks into vapour and char.</p>` +
+    rows([["Reactor feed", `${fmt(C.reactor_feed)} kg/day`, "case", `≈${fmt(C.reactor_feed / 24)} kg/h, continuous`],
+          ["Temperature", `≈${C.reactor_temp} °C`, "case"],
+          ["Liquid / gas / char", `${fmt(C.yields["Liquid oil"] * 100, 1)} / ${fmt(C.yields.Gas * 100, 1)} / ${fmt(C.yields.Char * 100, 1)}%`, "case"]]) + more("4 Reactor & yields"),
+  CD: () => `<p>Hot vapour from the reactor is cooled here and condenses into liquid oil. The gas that does not condense leaves through the gas outlet.</p>` +
+    rows([["Oil out", `${fmt(C.reactor_feed * C.yields["Liquid oil"], 1)} kg/day`, "case", `±${fmt(C.reactor_feed * C.oil_band)} kg/day model band`],
+          ["Equipment shown", "illustrative", "assumption", "not sized in the essay"]]) + more("4 Reactor & yields"),
+  OT: () => `<p>The pyrolysis oil collects here. Its heating value is close to HDPE oil reported in the literature.</p>` +
+    rows([["Oil", `${fmt(C.reactor_feed * C.yields["Liquid oil"], 1)} kg/day`, "case", `${fmt(C.reactor_feed * (C.yields["Liquid oil"] - C.oil_band))}–${fmt(C.reactor_feed * (C.yields["Liquid oil"] + C.oil_band))} kg/day band`],
+          ["Error band", "±9 pp", "sourced", "Belden et al. 2023"],
+          ["Heating value", "43.4–46.5 MJ/kg", "sourced", "HDPE oil, Shah et al. 2023"],
+          ["Energy in oil", `${fmt(C.reactor_feed * C.yields["Liquid oil"] * 43.4)} MJ/day`, "sourced", "at 43.4 MJ/kg"]]) + more("5 Energy balance"),
+  GS: () => `<p>Non-condensable pyrolysis gas. Whether it can heat the reactor is not verified yet, so its heating value is an input on the energy page.</p>` +
+    rows([["Gas", `${fmt(C.reactor_feed * C.yields.Gas, 1)} kg/day`, "case"],
+          ["Heating value", "enter a sourced value", "assumption"]]) + more("5 Energy balance"),
+  CH: () => `<p>Solid residue from the reactor. 5.4% is high for clean polyolefins (literature 0.4–2%), so it is read as including wax, additives and dirt.</p>` +
+    rows([["Char", `${fmt(C.reactor_feed * C.yields.Char, 1)} kg/day`, "case", "5.4% of reactor feed"]]) + more("4 Reactor & yields"),
+};
+
+// ---------- selection, labels, panel ----------
+let selected = null;
+const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
+const labels = {};
+const arrow = `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
+for (const [code, [name]] of Object.entries(PARTS)) {
+  const b = document.createElement("button");
+  b.className = "lbl"; b.type = "button";
+  b.innerHTML = `<b>${code}</b><span>${name}</span>${arrow}`;
+  b.onclick = () => select(code);
+  document.getElementById("labels").appendChild(b);
+  labels[code] = b;
+}
+function renderPanel(code) {
+  const head = `<span class="code">${code}</span><h2>${PARTS[code][0]}</h2>`;
+  document.getElementById("feedHead").innerHTML = code === "CAM" ? head : "";
+  body.innerHTML = (code === "CAM" ? "" : head) + CONTENT[code]();
+  panel.classList.toggle("wide", code === "CAM");
+}
+const tween = { t:1, from:null, to:null, zf:1, zt:1 };
+function focusOn(target, zoom) {
+  tween.from = controls.target.clone(); tween.to = target.clone();
+  tween.zf = camera.zoom; tween.zt = zoom; tween.t = 0;
+}
+function select(code) {
+  selected = code;
+  renderPanel(code);
+  panel.classList.add("open");
+  for (const [c, g] of Object.entries(parts)) setDim(g, c !== code);
+  for (const [c, b] of Object.entries(labels)) { b.classList.toggle("on", c === code); b.classList.toggle("dim", c !== code); }
+  focusOn(new THREE.Vector3(...PARTS[code][1]).add(new THREE.Vector3(1.6, -1, 0)), 1.9);
+}
+function clearSelection() {
+  selected = null;
+  panel.classList.remove("open");
+  for (const g of Object.values(parts)) setDim(g, false);
+  for (const b of Object.values(labels)) b.classList.remove("on", "dim");
+  focusOn(HOME.target, HOME.zoom);
+}
+function setDim(group, dim) {
+  group.traverse(o => {
+    if (!o.material || o === scanPad || o === puff || puffs.includes(o)) return;
+    if (o.userData.baseOpacity === undefined) o.userData.baseOpacity = o.material.opacity;
+    o.material.opacity = dim ? Math.min(o.userData.baseOpacity, .22) : o.userData.baseOpacity;
+  });
+}
+document.getElementById("close").onclick = clearSelection;
+document.getElementById("reset").onclick = () => { clearSelection(); camera.position.copy(HOME.pos); };
+document.getElementById("pause").onclick = e => { paused = !paused; e.target.textContent = paused ? "Resume flow" : "Pause flow"; };
+document.getElementById("toggle").onclick = e => { const off = document.body.classList.toggle("nolabels"); e.target.textContent = off ? "Show labels" : "Hide labels"; };
+addEventListener("keydown", e => { if (e.key === "Escape") clearSelection(); });
+
+// click a part in 3D (ignore drags)
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+let down = null;
+function partAt(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ptr, camera);
+  for (const hit of ray.intersectObjects(Object.values(parts), true)) {
+    let o = hit.object;
+    while (o && !o.userData.code) o = o.parent;
+    if (o && hit.object.isMesh) return o.userData.code;
+  }
+  return null;
+}
+renderer.domElement.addEventListener("pointerdown", e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener("pointerup", e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+  const code = partAt(e);
+  code ? select(code) : clearSelection();
+});
+renderer.domElement.addEventListener("pointermove", e => {
+  const code = partAt(e);
+  renderer.domElement.style.cursor = code ? "pointer" : "grab";
+  for (const [c, b] of Object.entries(labels)) b.style.zIndex = c === code ? 2 : 1;
+});
+
+// ---------- heading, legend ----------
+const replayText = (DATA.replay_source === "belt"
+  ? `Replaying ${replay.length} decisions from the last belt run`
+  : `No belt run yet: replaying ${replay.length} test-set decisions`) +
+  ` at 1/${SLOW} speed. Click any part, or its label, to see what happens there.`;
+
+// ---------- live link to belt_sim.py (it writes static/live/belt.json and belt.jpg) ----------
+const LIVE_URL = "/app/static/live/";
+const live = { on:false, lastItem:-1, status:null, hadFrame:false };
+const liveQueue = [];
+async function poll() {
+  try {
+    const r = await fetch(LIVE_URL + "belt.json?t=" + Date.now(), { cache:"no-store" });
+    const s = r.ok ? await r.json() : null;
+    const fresh = !!(s && s.running && Date.now() / 1000 - s.updated < 3);
+    if (s) {
+      const nums = s.events.map(e => e.item), top = nums.length ? Math.max(...nums) : 0;
+      if (live.lastItem < 0 || top < live.lastItem) live.lastItem = fresh ? Math.max(0, top - 1) : top;  // first look, or a new run
+      for (const e of s.events) if (e.item > live.lastItem) { if (fresh) liveQueue.push({ c:e.c, d:e.d, p:e.p }); live.lastItem = e.item; }
+      live.hadFrame = true;
+    }
+    if (fresh && !live.on) { for (const it of items) remove(it); items.length = 0; }   // clear the replay
+    live.on = fresh; live.status = s;
+  } catch (e) { live.on = false; }
+  const sub = document.getElementById("sub");
+  if (live.on) {
+    const c = live.status.counts;
+    sub.innerHTML = `<span class="dot on"></span><b>Live from belt_sim.py</b> · ${live.lastItem} items · ` +
+      ["ACCEPT", "REJECT", "REMOVE", "UNCERTAIN"].map(d => `<span style="color:${DEC_INK[d]}">${c[d]} ${d}</span>`).join(" · ") +
+      `. Items on this belt are the real live decisions. Click CAM to watch the simulation.`;
+  } else sub.innerHTML = replayText;
+  setTimeout(poll, 500);
+}
+poll();
+
+// the CAM panel shows the simulation's own frames, about 10 per second while it runs
+const feedImg = document.getElementById("feedImg"), feedMsg = document.getElementById("feedMsg"), feedState = document.getElementById("feedState");
+function feedTick() {
+  if (selected !== "CAM") return setTimeout(feedTick, 300);
+  if (live.on) {
+    feedMsg.style.display = "none";
+    feedState.innerHTML = `<span class="dot on"></span>Live · ${live.status.speed === 1 ? "real time" : live.status.speed + "× speed"}`;
+    feedImg.onload = feedImg.onerror = () => setTimeout(feedTick, 60);
+    feedImg.src = LIVE_URL + "belt.jpg?t=" + Date.now();
+    return;
+  }
+  feedState.innerHTML = `<span class="dot"></span>Not running`;
+  feedMsg.style.display = "grid";
+  feedMsg.innerHTML = live.hadFrame
+    ? "The belt has stopped; this is its last frame.<br>Press Start belt above the 3D view to run it again."
+    : "The belt simulation is not running.<br>Press Start belt above the 3D view, or run python belt_sim.py.";
+  if (live.hadFrame && !feedImg.src.includes("belt.jpg")) feedImg.src = LIVE_URL + "belt.jpg?t=" + Date.now();
+  if (!live.hadFrame) feedImg.removeAttribute("src");
+  setTimeout(feedTick, 500);
+}
+feedTick();
+document.getElementById("legend").innerHTML = ["ACCEPT", "REJECT", "REMOVE", "UNCERTAIN"]
+  .map(d => `<span><i style="background:${DEC[d]}"></i>${d}</span>`).join("");
+
+// ---------- loop ----------
+const tmp = new THREE.Vector3();
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight, a = w / h, s = 12.5;
+  renderer.setSize(w, h);
+  Object.assign(camera, { left:-s*a, right:s*a, top:s, bottom:-s });
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+  if (!paused) {
+    spawnT -= dt;
+    if (live.on) { if (liveQueue.length && spawnT <= 0) { spawn(liveQueue.shift()); spawnT = .45; } }
+    else if (spawnT <= 0) { spawn(); spawnT = 1.15; }
+    stepItems(dt);
+    screw.rotation.x += dt * 1.5;
+    heater.material.emissiveIntensity = .25 + .15 * Math.sin(t * 2);
+    oilLevel.scale.y = .3 + ((t * .03) % 1) * 1.5; oilLevel.position.y = .1 + oilLevel.scale.y / 2;
+    for (const p of puffs) {
+      p.userData.t = (p.userData.t + dt * .25) % 1;
+      p.position.y = 5.7 + p.userData.t * 1.6; p.scale.setScalar(.6 + p.userData.t);
+      p.material.opacity = .45 * (1 - p.userData.t);
+    }
+  }
+  scanPad.material.opacity = Math.max(0, scanPad.material.opacity - dt * 1.5);
+  if (puff.material.opacity > 0) { puff.material.opacity = Math.max(0, puff.material.opacity - dt * 2); puff.scale.multiplyScalar(1 + dt * 2); }
+  if (tween.t < 1) {
+    tween.t = Math.min(1, tween.t + dt * 2.2);
+    const k = 1 - Math.pow(1 - tween.t, 3);
+    controls.target.lerpVectors(tween.from, tween.to, k);
+    camera.zoom = tween.zf + (tween.zt - tween.zf) * k; camera.updateProjectionMatrix();
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  // place labels over their anchors
+  const w = stage.clientWidth, h = stage.clientHeight;
+  for (const [code, [, at]] of Object.entries(PARTS)) {
+    tmp.set(...at).project(camera);
+    const b = labels[code];
+    b.style.transform = `translate(${(tmp.x * .5 + .5) * w - b.offsetWidth / 2}px, ${(-tmp.y * .5 + .5) * h - b.offsetHeight - 16}px)`;
+  }
+});
+</script>
+</body></html>

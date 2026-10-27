@@ -13,7 +13,8 @@ st.set_page_config(page_title="CIRCU360", page_icon=":material/recycling:", layo
 inject_css()
 
 pages = {
-    "Live": [st.Page("ui/overview.py", title="Plant overview", icon=":material/factory:", default=True)],
+    "Live": [st.Page("ui/overview.py", title="Plant overview", icon=":material/factory:", default=True),
+             st.Page("ui/plant3d.py", title="3D plant", icon=":material/deployed_code:", url_path="plant3d")],
     "Process stages": [
         st.Page("ui/feed.py", title="1  Mixed feed", url_path="feed"),
         st.Page("ui/sorting.py", title="2  AI sorting", url_path="sorting"),

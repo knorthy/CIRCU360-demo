@@ -14,3 +14,6 @@ __pycache__/
 
 # Training logs
 *_log.txt
+
+# Live frames from belt_sim.py for the dashboard
+static/live/

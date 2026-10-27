@@ -7,13 +7,17 @@ items off the belt. Every item is logged to events.csv (read live by
 dashboard.py) and the run is recorded to demo.mp4 as a fallback for the demo.
 
 Run:            python belt_sim.py
-Options:        --speed 0.25  --items 80  --reject-t 0.30  --onnx  --no-window  --seed 1
+Options:        --speed 0.25  --items 80  --reject-t 0.30  --onnx  --no-window  --seed 1  --no-web
+                Frames are also saved to static/live/ so the dashboard's 3D page can show them (CAM panel);
+                --no-web turns that off. With --no-window --no-web it runs as fast as possible (record only).
                 --speed is playback only (0.25 = 4x slow motion, 1 = real time); the simulated
                 belt is always 0.8 m/s, so timings and events.csv do not change.
 Keys:           q or Esc to stop early
 """
 import argparse
 import csv
+import json
+import os
 import random
 import time
 from datetime import datetime
@@ -31,6 +35,8 @@ TEST_DIR = ROOT / "data" / "split" / "test"
 WEIGHTS = ROOT / "runs" / "circu360" / "weights"
 EVENTS_CSV = ROOT / "events.csv"
 VIDEO = ROOT / "demo.mp4"
+LIVE_DIR = ROOT / "static" / "live"               # the dashboard's 3D page shows these (served at app/static/live/)
+WEB_EVERY = 4                                     # save every 4th frame for the website (15 per simulated second)
 
 # Canvas layout, 1 px = 1 mm
 W, H = 1400, 440
@@ -118,6 +124,18 @@ def draw_item(canvas, it):
         cv2.putText(canvas, it.decision, (int(it.x) + 4, it.y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
 
+def save_live(canvas, status):
+    """Write the latest frame and status for the dashboard. Write to a temp file first, then swap it in."""
+    for path, data in [(LIVE_DIR / "belt.jpg", cv2.imencode(".jpg", canvas, [cv2.IMWRITE_JPEG_QUALITY, 75])[1].tobytes()),
+                       (LIVE_DIR / "belt.json", json.dumps(status).encode())]:
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_bytes(data)
+        try:
+            os.replace(tmp, path)
+        except PermissionError:                       # the web server is reading it right now; skip this frame
+            pass
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--speed", type=float, default=0.25, help="playback speed: 0.25 = 4x slow motion, 1 = real time")
@@ -126,7 +144,12 @@ def main():
     ap.add_argument("--onnx", action="store_true", help="use best.onnx instead of best.pt")
     ap.add_argument("--no-window", action="store_true", help="only record demo.mp4, no live window")
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--no-web", action="store_true", help="do not stream frames to the dashboard's 3D page")
     args = ap.parse_args()
+    web = not args.no_web
+    if web:
+        LIVE_DIR.mkdir(parents=True, exist_ok=True)
+    recent = []                                   # last few decisions, for the website
 
     random.seed(args.seed)
     files = sorted(p for p in TEST_DIR.rglob("*") if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
@@ -179,6 +202,8 @@ def main():
                                  [f"{P.get(c, 0):.4f}" for c in ["HDPE", "LDPE", "PP", "PET", "PVC", "OTHER"]] +
                                  [it.decision, f"{last_latency:.2f}", f"{it.fire_t:.3f}" if it.fire_t else ""])
                     f.flush()                                     # so the dashboard sees it immediately
+                    recent = (recent + [{"item": item_no, "c": it.true, "d": it.decision, "lat": round(last_latency, 2),
+                                         "p": {k: round(v, 4) for k, v in P.items()}}])[-12:]
 
                 # ejector: valve triggered at fire_t, air reaches the item after the valve delay
                 if it.fire_t is not None and not it.ejected and sim_t >= it.fire_t + VALVE_DELAY_MS / 1000:
@@ -191,14 +216,22 @@ def main():
             for it in on_belt:
                 draw_item(canvas, it)
             video.write(canvas)
+            if web and frame_no % WEB_EVERY == 0:
+                save_live(canvas, {"running": True, "updated": time.time(), "frame": frame_no, "speed": args.speed,
+                                   "counts": counts, "events": recent})
+            # wait out the rest of this frame's screen time, so the playback speed is steady
+            wait_ms = int((frame_wall_s - (time.perf_counter() - frame_start)) * 1000)
             if not args.no_window:
                 cv2.imshow("CIRCU360 belt simulation", canvas)
-                # wait out the rest of this frame's screen time, so the playback speed is steady
-                wait_ms = int((frame_wall_s - (time.perf_counter() - frame_start)) * 1000)
                 if cv2.waitKey(max(wait_ms, 1)) & 0xFF in (ord("q"), 27):
                     break
+            elif web and wait_ms > 0:
+                time.sleep(wait_ms / 1000)                # keep the website feed at the chosen speed
             frame_no += 1
 
+    if web:
+        save_live(canvas, {"running": False, "updated": time.time(), "frame": frame_no, "speed": args.speed,
+                           "counts": counts, "events": recent})
     video.release()
     cv2.destroyAllWindows()
     print("Decisions:", counts)
